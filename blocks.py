@@ -45,4 +45,9 @@ def residual_block(x, filters, activation_, kernel_size=(3, 3), is_training=True
     with tf.name_scope(residual_block.__name__):
         _x = conv_block(x, filters, activation_, kernel_size, is_training, sampling, normalization, dropout, mode)
         _x = conv_block(_x, filters, None, kernel_size, is_training, sampling, normalization, dropout, mode)
-        return _x + x
+
+        if x.get_shape().as_list()[-1] != filters:
+            __x = conv_block(x, filters, None, kernel_size, is_training, 'same', normalization, dropout, mode)
+        else:
+            __x = x
+        return _x + __x
