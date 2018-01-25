@@ -9,7 +9,7 @@ class Generator:
                  target_shape,
                  last_activation='tanh',
                  color_mode='rgb',
-                 normalize='batch',
+                 normalization='batch',
                  upsampling='subpixel',
                  is_training=True):
         self.input_shape = input_shape,
@@ -18,13 +18,13 @@ class Generator:
         self.name = 'model/generator'
         assert color_mode in ['grayscale', 'gray', 'rgb']
         self.channel = 1 if color_mode in ['grayscale', 'gray'] else 3
-        self.normalize = normalize
+        self.normalization = normalization
         self.upsampling = upsampling
         self.is_training = is_training
 
         self.conv_kwargs = {'activation_': 'relu',
                             'is_training': self.is_training,
-                            'normalization': self.normalize}
+                            'normalization': self.normalization}
 
     def __call__(self, *args, **kwargs):
         raise NotImplementedError
@@ -40,7 +40,7 @@ class UNet(Generator):
                  target_shape,
                  last_activation='tanh',
                  color_mode='rgb',
-                 normalize='batch',
+                 normalization='batch',
                  upsampling='subpixel',
                  is_training=True):
 
@@ -48,31 +48,38 @@ class UNet(Generator):
                          target_shape,
                          last_activation,
                          color_mode,
-                         normalize,
+                         normalization,
                          upsampling,
                          is_training)
 
     def __call__(self, x, reuse=False):
+        feature_maps = []
         with tf.variable_scope('Encoder'):
             _x = conv_block(x, 16, sampling='same', **self.conv_kwargs)
             _x = conv_block(_x, 16, sampling='down', **self.conv_kwargs)
+            feature_maps.append(_x)
 
             _x = conv_block(_x, 32, sampling='same', **self.conv_kwargs)
             _x = conv_block(_x, 32, sampling='down', **self.conv_kwargs)
+            feature_maps.append(_x)
 
             _x = conv_block(_x, 64, sampling='same', **self.conv_kwargs)
             _x = conv_block(_x, 64, sampling='down', **self.conv_kwargs)
+            feature_maps.append(_x)
 
             _x = conv_block(_x, 128, sampling='same', **self.conv_kwargs)
             _x = conv_block(_x, 128, sampling='down', **self.conv_kwargs)
+            feature_maps.append(_x)
 
             _x = conv_block(_x, 256, sampling='same', **self.conv_kwargs)
             _x = conv_block(_x, 256, sampling='same', **self.conv_kwargs)
             _x = conv_block(_x, 256, sampling='down', **self.conv_kwargs)
+            feature_maps.append(_x)
 
             _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
             _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
             _x = conv_block(_x, 512, sampling='down', **self.conv_kwargs)
+            feature_maps.append(_x)
 
             _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
             _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
@@ -83,23 +90,29 @@ class UNet(Generator):
             _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
             _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
 
+            _x = tf.concat([_x, feature_maps.pop()], axis=-1)
             _x = conv_block(_x, 512, sampling=self.upsampling, **self.conv_kwargs)
             _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
             _x = conv_block(_x, 256, sampling='same', **self.conv_kwargs)
 
+            _x = tf.concat([_x, feature_maps.pop()], axis=-1)
             _x = conv_block(_x, 256, sampling=self.upsampling, **self.conv_kwargs)
             _x = conv_block(_x, 256, sampling='same', **self.conv_kwargs)
             _x = conv_block(_x, 128, sampling='same', **self.conv_kwargs)
 
+            _x = tf.concat([_x, feature_maps.pop()], axis=-1)
             _x = conv_block(_x, 128, sampling=self.upsampling, **self.conv_kwargs)
             _x = conv_block(_x, 64, sampling='same', **self.conv_kwargs)
 
+            _x = tf.concat([_x, feature_maps.pop()], axis=-1)
             _x = conv_block(_x, 64, sampling=self.upsampling, **self.conv_kwargs)
             _x = conv_block(_x, 32, sampling='same', **self.conv_kwargs)
 
+            _x = tf.concat([_x, feature_maps.pop()], axis=-1)
             _x = conv_block(_x, 32, sampling=self.upsampling, **self.conv_kwargs)
             _x = conv_block(_x, 16, sampling='same', **self.conv_kwargs)
 
+            _x = tf.concat([_x, feature_maps.pop()], axis=-1)
             _x = conv_block(_x, 16, sampling=self.upsampling, **self.conv_kwargs)
             _x = conv_block(_x, self.channel, sampling='same', **self.conv_kwargs)
         return _x
@@ -111,7 +124,7 @@ class ResidualUNet(Generator):
                  target_shape,
                  last_activation='tanh',
                  color_mode='rgb',
-                 normalize='batch',
+                 normalization='batch',
                  upsampling='subpixel',
                  is_training=True):
 
@@ -119,7 +132,7 @@ class ResidualUNet(Generator):
                          target_shape,
                          last_activation,
                          color_mode,
-                         normalize,
+                         normalization,
                          upsampling,
                          is_training)
 
