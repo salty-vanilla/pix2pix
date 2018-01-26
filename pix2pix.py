@@ -4,6 +4,9 @@ import os
 import csv
 import time
 from PIL import Image
+import matplotlib
+import matplotlib.pyplot as plt
+matplotlib.use('agg')
 
 
 class Pix2Pix:
@@ -94,6 +97,7 @@ class Pix2Pix:
         # for display and csv
         loss_g = 0
         w_dis = 0
+        loss_l1 = 0
         writer.writerow(['loss_d', 'loss_g', 'gp', 'w_distance', 'l1_loss'])
 
         # fit loop
@@ -110,7 +114,6 @@ class Pix2Pix:
                                              self.epsilon_first_dim: image_x_batch.shape[0],
                                              })
                 if iter_ % n_critics == 0:
-                    # print noise_batch.shape, self.noise, self.generate, self.image
                     _, loss_g, loss_l1 = self.sess.run([self.opt_g, self.loss_g, self.l1_loss],
                                                        feed_dict={self.image_x: image_x_batch,
                                                                   self.image_y: image_y_batch,
@@ -126,7 +129,10 @@ class Pix2Pix:
                 writer.writerow([loss_d, loss_g, gradient_penalty, w_dis, loss_l1])
             if epoch % visualize_steps == 0:
                 self.visualize(os.path.join(result_dir, 'epoch_{}'.format(epoch)),
-                               image_x_batch, image_sampler.data_to_image)
+                               image_x_batch,
+                               image_y_batch,
+                               image_sampler.x_to_image,
+                               image_sampler.y_to_image)
             if epoch % save_steps == 0:
                 self.save(epoch)
         print('\nTraining is done ...\n')
@@ -149,18 +155,34 @@ class Pix2Pix:
         saver = tf.train.Saver(restore_vars)
         saver.restore(self.sess, file_path)
 
-    def visualize(self, dst_dir, image_x_batch, convert_function):
-        generated_data = self.predict_on_batch(image_x_batch)
-        generated_images = convert_function(generated_data)
+    def visualize(self,
+                  dst_dir,
+                  image_x_batch,
+                  image_y_batch,
+                  convert_function_x,
+                  convert_function_y):
+        labels = ['$x$', '$G(x)$', '$y$']
+        generated_y_batch = self.predict_on_batch(image_x_batch)
+        x_images = convert_function_x(image_x_batch)
+        y_images = convert_function_y(image_y_batch)
+        generated_y_images = convert_function_y(generated_y_batch)
 
         if not os.path.exists(dst_dir):
             os.makedirs(dst_dir)
-        for i, image in enumerate(generated_images):
-            if image.shape[2] == 1:
-                image = image.reshape(image.shape[:2])
+        for i, images in enumerate(zip(x_images, generated_y_images, y_images)):
+            plt.figure()
             dst_path = os.path.join(dst_dir, "{}.png".format(i))
-            pil_image = Image.fromarray(np.uint8(image))
-            pil_image.save(dst_path)
+            for c, im, l in enumerate(zip(images, labels)):
+                plt.subplot(1, 3, c+1)
+
+                if im.shape[-1] == 1:
+                    im = np.squeeze(im, -1)
+                plt.imshow(im, vmin=0, vmax=255)
+                plt.xticks([])
+                plt.yticks([])
+                plt.title(l, fontsize='x-large')
+            plt.savefig(dst_path)
+            plt.clf()
 
     def save(self, epoch):
         dst_dir = os.path.join(self.model_dir, "epoch_{}".format(epoch))
