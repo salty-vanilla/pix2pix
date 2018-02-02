@@ -129,4 +129,5 @@ def flatten(x):
 
 
 def global_average_pool2d(x):
-    return tf.reduce_mean(x, axis=[1, 2], name=global_average_pool2d.__name__)
+    with tf.name_scope(global_average_pool2d.__name__):
+        return tf.reduce_mean(x, axis=[1, 2], name=global_average_pool2d.__name__)
