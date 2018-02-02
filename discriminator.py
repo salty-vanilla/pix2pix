@@ -1,6 +1,6 @@
 import tensorflow as tf
 from blocks import conv_block
-from layers import conv2d, dense, flatten, activation
+from layers import conv2d, dense, flatten, activation, global_average_pool2d
 
 
 def discriminator_block(x, filters, activation_='lrelu', kernel_size=(3, 3),
@@ -81,6 +81,6 @@ class ResidualDiscriminator(Discriminator):
             if is_feature:
                 return _x
 
-            _x = flatten(_x)
+            _x = global_average_pool2d(_x)
             _x = dense(_x, units=1, activation_=None)
             return _x
