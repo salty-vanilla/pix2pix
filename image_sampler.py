@@ -66,7 +66,7 @@ class MyIterator(Iterator):
         return denormalize(x, self.normalization_x)
 
     def y_to_image(self, y):
-        return denormalize(x, self.normalization_y)
+        return denormalize(y, self.normalization_y)
 
 
 class DirectoryIterator(MyIterator):
@@ -98,10 +98,10 @@ class DirectoryIterator(MyIterator):
         self.x_dir = image_x_dir
         self.y_dir = image_y_dir
 
-        self.names = get_image_paths(self.x_dir)
+        self.names = [os.path.basename(p) for p in get_image_paths(self.x_dir)]
 
-        self.x_paths = [os.path.join(self.x_dir, name) for name in self.names]
-        self.y_paths = [os.path.join(self.y_dir, name) for name in self.names]
+        self.x_paths = np.array([os.path.join(self.x_dir, name) for name in self.names])
+        self.y_paths = np.array([os.path.join(self.y_dir, name) for name in self.names])
 
     def __call__(self, *args, **kwargs):
         with self.lock:
