@@ -5,8 +5,8 @@ import csv
 import time
 from PIL import Image
 import matplotlib
-import matplotlib.pyplot as plt
 matplotlib.use('agg')
+import matplotlib.pyplot as plt
 
 
 class Pix2Pix:
@@ -48,8 +48,8 @@ class Pix2Pix:
                                                 minval=0., maxval=1.)
                 else:
                     raise ValueError
-                differences = self.image_y_ - self.image_y
-                interpolates = self.image_y + (epsilon * differences)
+                differences = self.fake_pair - self.true_pair
+                interpolates = self.true_pair + (epsilon * differences)
                 gradients = tf.gradients(self.discriminator(interpolates), [interpolates])[0]
                 slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
                 self.gradient_penalty = tf.reduce_mean(tf.square(slopes - 1.))
@@ -80,7 +80,7 @@ class Pix2Pix:
             result_dir='result',
             model_dir='model'):
         batch_size = image_sampler.batch_size
-        nb_sample = image_sampler.nb_sample
+        nb_sample = image_sampler.n
         self.model_dir = model_dir
 
         # prepare for csv
@@ -123,10 +123,12 @@ class Pix2Pix:
                                                      self.image_y: image_y_batch,
                                                      })
                     w_dis = -w_dis
-                print('iter : {} / {}  {:.1f}[s]  loss_d : {:.4f}  loss_g : {:.4f}  gp : {:.4f}, w_dis : {:.4f}\r'
+                print('iter : {} / {}  {:.1f}[s]  loss_d : {:.4f}  loss_g : {:.4f}  '
+                      'gp : {:.4f}, w_dis : {:.4f}, loss_l1 : {:.4f}\r'
                       .format(iter_, steps_per_epoch, time.time() - start,
-                              loss_d, loss_g, gradient_penalty, w_dis), end='')
+                              loss_d, loss_g, gradient_penalty, w_dis, loss_l1), end='')
                 writer.writerow([loss_d, loss_g, gradient_penalty, w_dis, loss_l1])
+                f.flush()
             if epoch % visualize_steps == 0:
                 self.visualize(os.path.join(result_dir, 'epoch_{}'.format(epoch)),
                                image_x_batch,
@@ -172,7 +174,7 @@ class Pix2Pix:
         for i, images in enumerate(zip(x_images, generated_y_images, y_images)):
             plt.figure()
             dst_path = os.path.join(dst_dir, "{}.png".format(i))
-            for c, im, l in enumerate(zip(images, labels)):
+            for c, (im, l) in enumerate(zip(images, labels)):
                 plt.subplot(1, 3, c+1)
 
                 if im.shape[-1] == 1:
