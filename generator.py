@@ -6,14 +6,12 @@ from blocks import residual_block, conv_block
 class Generator:
     def __init__(self,
                  input_shape,
-                 target_shape,
                  last_activation='tanh',
                  color_mode='rgb',
                  normalization='batch',
                  upsampling='subpixel',
                  is_training=True):
-        self.input_shape = input_shape,
-        self.target_shape = target_shape
+        self.input_shape = input_shape
         self.last_activation = last_activation
         self.name = 'model/generator'
         assert color_mode in ['grayscale', 'gray', 'rgb']
@@ -37,7 +35,6 @@ class Generator:
 class UNet(Generator):
     def __init__(self,
                  input_shape,
-                 target_shape,
                  last_activation='tanh',
                  color_mode='rgb',
                  normalization='batch',
@@ -45,7 +42,6 @@ class UNet(Generator):
                  is_training=True):
 
         super().__init__(input_shape,
-                         target_shape,
                          last_activation,
                          color_mode,
                          normalization,
@@ -54,74 +50,78 @@ class UNet(Generator):
 
     def __call__(self, x, reuse=False):
         feature_maps = []
-        with tf.variable_scope('Encoder'):
-            _x = conv_block(x, 16, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 16, sampling='down', **self.conv_kwargs)
-            feature_maps.append(_x)
+        with tf.variable_scope(self.name) as vs:
+            if reuse:
+                vs.reuse_variables()
 
-            _x = conv_block(_x, 32, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 32, sampling='down', **self.conv_kwargs)
-            feature_maps.append(_x)
+            with tf.variable_scope('Encoder'):
+                _x = conv_block(x, 16, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 16, sampling='down', **self.conv_kwargs)
+                feature_maps.append(_x)
 
-            _x = conv_block(_x, 64, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 64, sampling='down', **self.conv_kwargs)
-            feature_maps.append(_x)
+                _x = conv_block(_x, 32, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 32, sampling='down', **self.conv_kwargs)
+                feature_maps.append(_x)
 
-            _x = conv_block(_x, 128, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 128, sampling='down', **self.conv_kwargs)
-            feature_maps.append(_x)
+                _x = conv_block(_x, 64, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 64, sampling='down', **self.conv_kwargs)
+                feature_maps.append(_x)
 
-            _x = conv_block(_x, 256, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 256, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 256, sampling='down', **self.conv_kwargs)
-            feature_maps.append(_x)
+                _x = conv_block(_x, 128, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 128, sampling='down', **self.conv_kwargs)
+                feature_maps.append(_x)
 
-            _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 512, sampling='down', **self.conv_kwargs)
-            feature_maps.append(_x)
+                _x = conv_block(_x, 256, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 256, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 256, sampling='down', **self.conv_kwargs)
+                feature_maps.append(_x)
 
-            _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 512, sampling='down', **self.conv_kwargs)
+                _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 512, sampling='down', **self.conv_kwargs)
+                feature_maps.append(_x)
 
-        with tf.variable_scope('Decoder'):
-            _x = conv_block(_x, 512, sampling=self.upsampling, **self.conv_kwargs)
-            _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 512, sampling='down', **self.conv_kwargs)
 
-            _x = tf.concat([_x, feature_maps.pop()], axis=-1)
-            _x = conv_block(_x, 512, sampling=self.upsampling, **self.conv_kwargs)
-            _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 256, sampling='same', **self.conv_kwargs)
+            with tf.variable_scope('Decoder'):
+                _x = conv_block(_x, 512, sampling=self.upsampling, **self.conv_kwargs)
+                _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
 
-            _x = tf.concat([_x, feature_maps.pop()], axis=-1)
-            _x = conv_block(_x, 256, sampling=self.upsampling, **self.conv_kwargs)
-            _x = conv_block(_x, 256, sampling='same', **self.conv_kwargs)
-            _x = conv_block(_x, 128, sampling='same', **self.conv_kwargs)
+                _x = tf.concat([_x, feature_maps.pop()], axis=-1)
+                _x = conv_block(_x, 512, sampling=self.upsampling, **self.conv_kwargs)
+                _x = conv_block(_x, 512, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 256, sampling='same', **self.conv_kwargs)
 
-            _x = tf.concat([_x, feature_maps.pop()], axis=-1)
-            _x = conv_block(_x, 128, sampling=self.upsampling, **self.conv_kwargs)
-            _x = conv_block(_x, 64, sampling='same', **self.conv_kwargs)
+                _x = tf.concat([_x, feature_maps.pop()], axis=-1)
+                _x = conv_block(_x, 256, sampling=self.upsampling, **self.conv_kwargs)
+                _x = conv_block(_x, 256, sampling='same', **self.conv_kwargs)
+                _x = conv_block(_x, 128, sampling='same', **self.conv_kwargs)
 
-            _x = tf.concat([_x, feature_maps.pop()], axis=-1)
-            _x = conv_block(_x, 64, sampling=self.upsampling, **self.conv_kwargs)
-            _x = conv_block(_x, 32, sampling='same', **self.conv_kwargs)
+                _x = tf.concat([_x, feature_maps.pop()], axis=-1)
+                _x = conv_block(_x, 128, sampling=self.upsampling, **self.conv_kwargs)
+                _x = conv_block(_x, 64, sampling='same', **self.conv_kwargs)
 
-            _x = tf.concat([_x, feature_maps.pop()], axis=-1)
-            _x = conv_block(_x, 32, sampling=self.upsampling, **self.conv_kwargs)
-            _x = conv_block(_x, 16, sampling='same', **self.conv_kwargs)
+                _x = tf.concat([_x, feature_maps.pop()], axis=-1)
+                _x = conv_block(_x, 64, sampling=self.upsampling, **self.conv_kwargs)
+                _x = conv_block(_x, 32, sampling='same', **self.conv_kwargs)
 
-            _x = tf.concat([_x, feature_maps.pop()], axis=-1)
-            _x = conv_block(_x, 16, sampling=self.upsampling, **self.conv_kwargs)
-            _x = conv_block(_x, self.channel, sampling='same', **self.conv_kwargs)
+                _x = tf.concat([_x, feature_maps.pop()], axis=-1)
+                _x = conv_block(_x, 32, sampling=self.upsampling, **self.conv_kwargs)
+                _x = conv_block(_x, 16, sampling='same', **self.conv_kwargs)
+
+                _x = tf.concat([_x, feature_maps.pop()], axis=-1)
+                _x = conv_block(_x, 16, sampling=self.upsampling, **self.conv_kwargs)
+                _x = conv_block(_x, self.channel, sampling='same',
+                                normalization=None, activation_=self.last_activation)
         return _x
 
 
 class ResidualUNet(Generator):
     def __init__(self,
                  input_shape,
-                 target_shape,
                  last_activation='tanh',
                  color_mode='rgb',
                  normalization='batch',
@@ -129,7 +129,6 @@ class ResidualUNet(Generator):
                  is_training=True):
 
         super().__init__(input_shape,
-                         target_shape,
                          last_activation,
                          color_mode,
                          normalization,
