@@ -50,31 +50,31 @@ class ResidualDiscriminator(Discriminator):
 
             for i in range(2):
                 _x = discriminator_block(_x, 32, **self.conv_kwargs)
-            _x = conv_block(x, 64,
+            _x = conv_block(_x, 64,
                             kernel_size=(4, 4), sampling='down',
                             **self.conv_kwargs)
 
             for i in range(4):
                 _x = discriminator_block(_x, 64, **self.conv_kwargs)
-            _x = conv_block(x, 128,
+            _x = conv_block(_x, 128,
                             kernel_size=(4, 4), sampling='down',
                             **self.conv_kwargs)
 
             for i in range(4):
                 _x = discriminator_block(_x, 128, **self.conv_kwargs)
-            _x = conv_block(x, 256,
+            _x = conv_block(_x, 256,
                             kernel_size=(4, 4), sampling='down',
                             **self.conv_kwargs)
 
             for i in range(4):
                 _x = discriminator_block(_x, 256, **self.conv_kwargs)
-            _x = conv_block(x, 512,
+            _x = conv_block(_x, 512,
                             kernel_size=(4, 4), sampling='down',
                             **self.conv_kwargs)
 
             for i in range(4):
                 _x = discriminator_block(_x, 512, **self.conv_kwargs)
-            _x = conv_block(x, 1024,
+            _x = conv_block(_x, 1024,
                             kernel_size=(4, 4), sampling='down',
                             **self.conv_kwargs)
 
