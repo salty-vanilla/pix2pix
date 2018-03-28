@@ -203,7 +203,7 @@ def batch_norm(x, is_training=True):
 
 
 def layer_norm(x, is_training=True):
-    return tl.layer_norm(x, is_training=is_training)
+    return tl.layer_norm(x, trainable=is_training)
 
 
 def flatten(x):
