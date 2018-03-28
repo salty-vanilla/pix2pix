@@ -1,6 +1,6 @@
 import tensorflow as tf
 from blocks import conv_block
-from layers import conv2d, dense, flatten, activation, global_average_pool2d
+from layers import conv2d, dense, flatten, activation, global_average_pool2d, layer_norm
 
 
 def discriminator_block(x,
@@ -20,6 +20,8 @@ def discriminator_block(x,
         if residual:
             _x += x
         _x = activation(_x, activation_)
+        if normalization == 'layer':
+          _x = layer_norm(_x, is_training=is_training)
         return _x
 
 
