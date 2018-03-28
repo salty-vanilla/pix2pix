@@ -55,7 +55,6 @@ def main():
                       l1_weight=args.l1_weight,
                       gradient_penalty_weight=args.gp_weight,
                       is_training=True)
-    exit()
     pix2pix.fit(image_sampler.flow_from_directory(args.x_dir,
                                                   args.y_dir,
                                                   batch_size=args.batch_size),
