@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.contrib.keras.python.keras import layers as kl
+from tensorflow.python.keras import layers as kl
 from tensorflow.contrib import layers as tl
 
 
@@ -8,56 +8,83 @@ def dense(x, units, activation_=None):
                       activation_)
 
 
-def conv1d(x, filters, kernel_size=3, stride=1, padding='same',
-           activation_=None, is_training=True):
+def conv1d(x, filters,
+           kernel_size=3,
+           stride=1,
+           padding='same',
+           activation_=None,
+           is_training=True):
     """
-
-    :param x: (bs, length, channel)
-    :param filters: int
-    :param kernel_size: int
-    :param stride: int
-    :param padding: same or valid
-    :param activation_:
-    :param is_training:
-    :return: (bs, length, new_channel)
+    Args:
+        x: input_tensor (N, L)
+        filters: number of filters
+        kernel_size: int
+        stride: int
+        padding: 'same' or 'valid'
+        activation_: activation function
+        is_training: True or False
+    Returns:
     """
-    _x = tf.expand_dims(x, axis=2)
-    _x = activation(kl.Conv2D(filters, (kernel_size, 1), (stride, 1), padding,
-                              activation=None, trainable=is_training)(_x),
-                    activation_)
-    _x = tf.squeeze(_x, axis=2)
+    with tf.variable_scope(None, conv1d.__name__):
+        _x = tf.expand_dims(x, axis=2)
+        _x = activation(kl.Conv2D(filters, (kernel_size, 1), (stride, 1), padding,
+                                  activation=None, trainable=is_training)(_x),
+                        activation_)
+        _x = tf.squeeze(_x, axis=2)
     return _x
 
 
-def conv1d_transpose(x, filters, kernel_size=3, stride=2, padding='same',
-                     activation_=None, is_training=True):
+def conv1d_transpose(x, filters,
+                     kernel_size=3,
+                     stride=2,
+                     padding='same',
+                     activation_=None,
+                     is_training=True):
     """
-
-        :param x: (bs, length, channel)
-        :param filters: int
-        :param kernel_size: int
-        :param stride: int
-        :param padding: same or valid
-        :param activation_:
-        :param is_training:
-        :return: (bs, length, new_channel)
-        """
-    _x = tf.expand_dims(x, axis=2)
-    _x = activation(kl.Conv2DTranspose(filters, (kernel_size, 1), (stride, 1), padding,
-                                       activation=None, trainable=is_training)(_x),
-                    activation_)
-    _x = tf.squeeze(_x, axis=2)
+    Args:
+        x: input_tensor (N, L)
+        filters: number of filters
+        kernel_size: int
+        stride: int
+        padding: 'same' or 'valid'
+        activation_: activation function
+        is_training: True or False
+    Returns: tensor (N, L_)
+    """
+    with tf.variable_scope(None, conv1d_transpose.__name__):
+        _x = tf.expand_dims(x, axis=2)
+        _x = activation(kl.Conv2DTranspose(filters, (kernel_size, 1), (stride, 1), padding,
+                                           activation=None, trainable=is_training)(_x),
+                        activation_)
+        _x = tf.squeeze(_x, axis=2)
     return _x
 
 
 def max_pool1d(x, kernel_size=2, stride=2, padding='same'):
-    _x = tf.expand_dims(x, axis=2)
-    _x = kl.MaxPool2D((kernel_size, 1), (stride, 1), padding)(_x)
-    _x = tf.squeeze(_x, axis=2)
+    """
+    Args:
+        x: input_tensor (N, L)
+        kernel_size: int
+        stride: int
+        padding: 'same' or 'valid'
+    Returns: tensor (N, L//ks)
+    """
+    with tf.name_scope(max_pool1d.__name__):
+        _x = tf.expand_dims(x, axis=2)
+        _x = kl.MaxPool2D((kernel_size, 1), (stride, 1), padding)(_x)
+        _x = tf.squeeze(_x, axis=2)
     return _x
 
 
 def average_pool1d(x, kernel_size=2, stride=2, padding='same'):
+    """
+    Args:
+        x: input_tensor (N, L)
+        kernel_size: int
+        stride: int
+        padding: same
+    Returns: tensor (N, L//ks)
+    """
     _x = tf.expand_dims(x, axis=2)
     _x = kl.AveragePooling2D((kernel_size, 1), (stride, 1), padding)(_x)
     _x = tf.squeeze(_x, axis=2)
@@ -65,29 +92,82 @@ def average_pool1d(x, kernel_size=2, stride=2, padding='same'):
 
 
 def upsampling1d(x, size=2):
+    """
+    Args:
+        x: input_tensor (N, L)
+        size: int
+    Returns: tensor (N, L*ks)
+    """
     _x = tf.expand_dims(x, axis=2)
     _x = kl.UpSampling2D((size, 1))(_x)
     _x = tf.squeeze(_x, axis=2)
     return _x
 
 
-def conv2d(x, filters, kernel_size=(3, 3), strides=(1, 1), padding='same',
-           activation_=None, is_training=True):
-    return activation(kl.Conv2D(filters, kernel_size, strides, padding,
-                                activation=None, trainable=is_training)(x),
+def conv2d(x, filters,
+           kernel_size=(3, 3),
+           strides=(1, 1),
+           padding='same',
+           activation_: str =None,
+           kernel_initializer='glorot_uniform',
+           bias_initializer='zeros',
+           kernel_regularizer=None,
+           bias_regularizer=None,
+           is_training=True):
+    return activation(kl.Conv2D(filters,
+                                kernel_size,
+                                strides,
+                                padding,
+                                activation=None,
+                                kernel_initializer=kernel_initializer,
+                                bias_initializer=bias_initializer,
+                                kernel_regularizer=kernel_regularizer,
+                                bias_regularizer=bias_regularizer,
+                                trainable=is_training)(x),
                       activation_)
 
 
-def conv2d_transpose(x, filters, kernel_size=(3, 3), strides=(2, 2), padding='same',
-                     activation_=None, is_training=True):
-    return activation(kl.Conv2DTranspose(filters, kernel_size, strides, padding,
-                                         activation=None, trainable=is_training)(x),
+def conv2d_transpose(x, filters,
+                     kernel_size=(3, 3),
+                     strides=(2, 2),
+                     padding='same',
+                     activation_=None,
+                     kernel_initializer='glorot_uniform',
+                     bias_initializer='zeros',
+                     kernel_regularizer=None,
+                     bias_regularizer=None,
+                     is_training=True):
+    return activation(kl.Conv2DTranspose(filters,
+                                         kernel_size,
+                                         strides,
+                                         padding,
+                                         activation=None,
+                                         kernel_initializer=kernel_initializer,
+                                         bias_initializer=bias_initializer,
+                                         kernel_regularizer=kernel_regularizer,
+                                         bias_regularizer=bias_regularizer,
+                                         trainable=is_training)(x),
                       activation_)
 
 
-def subpixel_conv2d(x, filters, kernel_size=(3, 3), is_training=True, **kwargs):
-    with tf.name_scope(subpixel_conv2d.__name__):
-        _x = conv2d(x, filters * 4, kernel_size, strides=(1, 1), activation_=None, is_training=is_training)
+def subpixel_conv2d(x, filters,
+                    rate=2,
+                    kernel_size=(3, 3),
+                    kernel_initializer='glorot_uniform',
+                    bias_initializer='zeros',
+                    kernel_regularizer=None,
+                    bias_regularizer=None,
+                    is_training=True):
+    with tf.variable_scope(None, subpixel_conv2d.__name__):
+        _x = conv2d(x, filters*(rate**2),
+                    kernel_size,
+                    strides=(1, 1),
+                    activation_=None,
+                    kernel_initializer=kernel_initializer,
+                    bias_initializer=bias_initializer,
+                    kernel_regularizer=kernel_regularizer,
+                    bias_regularizer=bias_regularizer,
+                    is_training=is_training)
         _x = pixel_shuffle(_x)
     return _x
 
@@ -98,9 +178,9 @@ def pixel_shuffle(x, r=2):
         _, h, w, c = x.get_shape().as_list()
 
         _x = tf.transpose(x, (0, 3, 1, 2))
-        _x = tf.reshape(_x, (bs, r, r, c // (r ** 2), h, w))
+        _x = tf.reshape(_x, (bs, r, r, c//(r**2), h, w))
         _x = tf.transpose(_x, (0, 3, 4, 1, 5, 2))
-        _x = tf.reshape(_x, (bs, c // (r ** 2), h * r, w * r))
+        _x = tf.reshape(_x, (bs, c//(r**2), h*r, w*r))
         _x = tf.transpose(_x, (0, 2, 3, 1))
     return _x
 
@@ -112,6 +192,8 @@ def reshape(x, target_shape):
 def activation(x, func=None):
     if func == 'lrelu':
         return kl.LeakyReLU(0.2)(x)
+    elif func == 'swish':
+        return x * kl.Activation('sigmoid')(x)
     else:
         return kl.Activation(func)(x)
 
@@ -129,5 +211,18 @@ def flatten(x):
 
 
 def global_average_pool2d(x):
-    with tf.name_scope(global_average_pool2d.__name__):
-        return tf.reduce_mean(x, axis=[1, 2], name=global_average_pool2d.__name__)
+    return tf.reduce_mean(x, axis=[1, 2], name=global_average_pool2d.__name__)
+
+
+def dropout(x,
+            rate=0.5,
+            is_training=True):
+    return tl.dropout(x, 1.-rate,
+                      is_training=is_training)
+
+
+def average_pool2d(x,
+                   kernel_size=(2, 2),
+                   strides=(2, 2),
+                   padding='same'):
+    return kl.AveragePooling2D(kernel_size, strides, padding)(x)

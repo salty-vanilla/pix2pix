@@ -1,8 +1,15 @@
 from layers import *
 
 
-def conv_block(x, filters, activation_, kernel_size=(3, 3), is_training=True,
-               sampling='same', normalization=None, dropout=0.0, mode='conv_first'):
+def conv_block(x,
+               filters,
+               activation_,
+               kernel_size=(3, 3),
+               is_training=True,
+               sampling='same',
+               normalization=None,
+               dropout_rate=0.0,
+               mode='conv_first'):
     assert mode in ['conv_first', 'normalization_first']
     assert sampling in ['deconv', 'subpixel', 'down', 'same']
     assert normalization in ['batch', 'layer', None]
@@ -15,7 +22,7 @@ def conv_block(x, filters, activation_, kernel_size=(3, 3), is_training=True,
         else None
     strides = (1, 1) if sampling in ['same', 'subpixel'] else (2, 2)
 
-    with tf.name_scope(conv_block.__name__):
+    with tf.variable_scope(None, conv_block.__name__):
         if mode == 'conv_first':
             _x = conv_func(x, filters, kernel_size=kernel_size, activation_=None,
                            strides=strides, is_training=is_training)
@@ -25,8 +32,8 @@ def conv_block(x, filters, activation_, kernel_size=(3, 3), is_training=True,
 
             _x = activation(_x, activation_)
 
-            if dropout != 0:
-                _x = kl.Dropout(dropout)(_x)
+            if dropout_rate != 0:
+                _x = dropout(_x, dropout_rate)
 
         else:
             if normalization is None:
@@ -40,14 +47,27 @@ def conv_block(x, filters, activation_, kernel_size=(3, 3), is_training=True,
         return _x
 
 
-def residual_block(x, filters, activation_, kernel_size=(3, 3), is_training=True, sampling='same',
-                   normalization=None, dropout=0.0, mode='conv_first'):
-    with tf.name_scope(residual_block.__name__):
-        _x = conv_block(x, filters, activation_, kernel_size, is_training, sampling, normalization, dropout, mode)
-        _x = conv_block(_x, filters, None, kernel_size, is_training, sampling, normalization, dropout, mode)
+def residual_block(x,
+                   filters,
+                   activation_,
+                   kernel_size=(3, 3),
+                   is_training=True,
+                   sampling='same',
+                   normalization=None,
+                   dropout_rate=0.0,
+                   mode='conv_first'):
+    with tf.variable_scope(None, residual_block.__name__):
+        _x = conv_block(x, filters, activation_, kernel_size,
+                        is_training, sampling, normalization,
+                        dropout_rate, mode)
+        _x = conv_block(_x, filters, None, kernel_size,
+                        is_training, sampling, normalization,
+                        dropout_rate, mode)
 
         if x.get_shape().as_list()[-1] != filters:
-            __x = conv_block(x, filters, None, kernel_size, is_training, 'same', normalization, dropout, mode)
+            __x = conv_block(x, filters, None, kernel_size,
+                             is_training, 'same', normalization,
+                             dropout_rate, mode)
         else:
             __x = x
         return _x + __x

@@ -26,7 +26,7 @@ def main():
     parser.add_argument('--model_dir', '-md', type=str, default="./params")
     parser.add_argument('--result_dir', '-rd', type=str, default="./result")
     parser.add_argument('--noise_mode', '-nm', type=str, default="uniform")
-    parser.add_argument('--upsampling', '-up', type=str, default="subpixel")
+    parser.add_argument('--upsampling', '-up', type=str, default="deconv")
     parser.add_argument('--dis_norm', '-dn', type=str, default=None)
 
     args = parser.parse_args()
@@ -55,7 +55,7 @@ def main():
                       l1_weight=args.l1_weight,
                       gradient_penalty_weight=args.gp_weight,
                       is_training=True)
-
+    exit()
     pix2pix.fit(image_sampler.flow_from_directory(args.x_dir,
                                                   args.y_dir,
                                                   batch_size=args.batch_size),

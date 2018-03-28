@@ -1,4 +1,4 @@
-from tensorflow.contrib.keras.python.keras.preprocessing.image import Iterator
+from tensorflow.python.keras.preprocessing.image import Iterator
 import os
 import numpy as np
 from PIL import Image
@@ -105,7 +105,7 @@ class DirectoryIterator(MyIterator):
 
     def __call__(self, *args, **kwargs):
         with self.lock:
-            index_array, current_index, current_batch_size = next(self.index_generator)
+            index_array = next(self.index_generator)
         x_path_batch = self.x_paths[index_array]
         y_path_batch = self.y_paths[index_array]
         image_x_batch = np.array([load_image(path,
